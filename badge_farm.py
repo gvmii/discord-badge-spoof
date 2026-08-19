@@ -1,13 +1,14 @@
-"""Badge farm - rotates fake windowed game processes.
+"""Fake windowed game processes so Discord's game detection sees them as real games.
 
-Each rotation: stages a renamed pythonw.exe with a Tk window named after
-the game, launches it, briefly focuses it (the native observer scans the
-foreground process), and writes current.json so the Discord-side
-override script stays in sync.
+For each game in the roster, a copy of pythonw.exe is staged under .fake_games/
+renamed as the game's executable and launched running a tiny off-screen Tk
+window titled with the game's name. Discord's observer matches processes by
+executable name + window title and reports them as detected games, which feeds
+the profile badges on Discord's ~24h analytics cycle.
 
 Usage:
     python badge_farm.py --each 8
-    python badge_farm.py --once overwatch.exe --each 2
+    python badge_farm.py --games celeste.exe --each 30
 """
 
 from __future__ import annotations
@@ -196,17 +197,8 @@ def kill_path(path: Path) -> None:
 def cleanup_staged() -> None:
     if not STAGE_DIR.is_dir():
         return
-    for exe in STAGE_DIR.glob("*.exe"):
+    for exe in STAGE_DIR.rglob("*.exe"):
         kill_path(exe)
-
-
-def focus_window(title_or_pid) -> None:
-    ps = (
-        "$sh = New-Object -ComObject WScript.Shell; "
-        f"$sh.AppActivate({str(title_or_pid)!r}) | Out-Null"
-    )
-    subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                   capture_output=True, timeout=30)
 
 
 def write_current(game: tuple, pid: int, exe_path: Path) -> None:
@@ -267,12 +259,10 @@ def main() -> int:
     each_sec = args.each_seconds if args.each_seconds > 0 else each * 60
 
     if PYTHONW is None or not PYTHONW.exists():
-        print("[!] Could not find pythonw.exe - make sure Python for Windows is installed.")
+        print("error: could not find pythonw.exe - make sure Python for Windows is installed.")
         return 1
 
-    print("[*] Badge farm")
-    print(f"[*] Games: {len(games)} | per game: {each_sec}s")
-    print("[*] Fake windowed games with the off-screen trick. No JS needed.\n")
+    print(f"{len(games)} games, {each_sec}s each")
 
     cleanup_staged()
 
@@ -299,8 +289,7 @@ def main() -> int:
                 proc = subprocess.Popen([str(target), str(script)], cwd=str(STAGE_DIR))
                 time.sleep(3)
                 write_current((gid, name, exe), proc.pid, target)
-                focus_window(name)
-                print(f"    pid {proc.pid} - focused")
+                print(f"    pid {proc.pid}")
                 time.sleep(max(1, each_sec - 3))
 
                 proc.terminate()
@@ -316,11 +305,11 @@ def main() -> int:
             if args.rounds and round_no >= args.rounds:
                 break
     except KeyboardInterrupt:
-        print("\n[*] Stopping...")
+        print("\nStopping...")
     finally:
         cleanup_staged()
 
-    print("[*] Done.")
+    print("Done.")
     return 0
 
 
