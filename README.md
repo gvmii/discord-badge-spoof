@@ -30,7 +30,7 @@ python badge_farm.py --each 30
 python badge_farm.py --games celeste.exe --each 30
 python badge_farm.py --games "hollow_knight.exe,celeste.exe" --each 30
 
-# fast cycling, in seconds per game (handy for a quick smoke test)
+# fast cycling, in seconds per game (handy for checking a game shows up quickly)
 python badge_farm.py --each-seconds 30
 
 # one game, one session, then exit
