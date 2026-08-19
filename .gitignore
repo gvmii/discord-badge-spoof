@@ -1,0 +1,24 @@
+# runtime staging - regenerated on every run
+.fake_games/
+
+# runtime state + logs
+.badge_farm_state.json
+*.log
+*.err
+
+# obsolete investigation scripts / optional extras
+archive/
+equicord_badge_spoof/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# editor / os
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
